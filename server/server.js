@@ -193,5 +193,9 @@ app.post("/api/analyze", upload.single("photo"), async (req, res) => {
   }
 });
 
-module.exports = app;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+export default app;
 

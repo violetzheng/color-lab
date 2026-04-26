@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import { IncomingForm } from "formidable";
-import { createReadStream } from "fs";
+import { readFile } from "fs/promises";
 
 function clampByte(x) {
   return Math.max(0, Math.min(255, Math.round(x)));
@@ -151,13 +151,7 @@ export default async function handler(req, res) {
 
     const k = Math.max(2, Math.min(10, Number(fields.k?.[0] || 5)));
 
-    const fileBuffer = await new Promise((resolve, reject) => {
-      const chunks = [];
-      const stream = createReadStream(photoFile.filepath);
-      stream.on("data", (chunk) => chunks.push(chunk));
-      stream.on("end", () => resolve(Buffer.concat(chunks)));
-      stream.on("error", reject);
-    });
+    const fileBuffer = await readFile(photoFile.filepath);
 
     const image = sharp(fileBuffer, { failOn: "none" }).rotate();
     const metadata = await image.metadata();

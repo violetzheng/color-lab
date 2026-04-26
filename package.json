@@ -9,5 +9,9 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "sharp": "^0.33.5",
+    "formidable": "^3.5.1"
   }
 }
