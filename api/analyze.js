@@ -1,18 +1,6 @@
-import express from "express";
-import cors from "cors";
-import multer from "multer";
 import sharp from "sharp";
-
-const app = express();
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 12 * 1024 * 1024 },
-});
-
-app.use(cors({ origin: true }));
-app.use(express.json());
-
-const PORT = process.env.PORT || 4000;
+import { IncomingForm } from "formidable";
+import { createReadStream } from "fs";
 
 function clampByte(x) {
   return Math.max(0, Math.min(255, Math.round(x)));
@@ -127,8 +115,6 @@ function kMeansRgb(pixels, k, iterations = 14) {
 function shouldKeepPixel(r, g, b, a) {
   if (a < 180) return false;
 
-  // Drop near-white and near-black outliers slightly so the palette better reflects objects.
-  // Remove these two lines if you want exact dominance including backgrounds/shadows.
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   if (max > 248 && min > 238) return false;
@@ -136,19 +122,44 @@ function shouldKeepPixel(r, g, b, a) {
   return true;
 }
 
-app.get("/api/health", (_req, res) => {
-  res.json({ ok: true });
-});
+export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+  );
 
-app.post("/api/analyze", upload.single("photo"), async (req, res) => {
+  if (req.method === "OPTIONS") {
+    res.status(200).end();
+    return;
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   try {
-    if (!req.file) {
+    const form = new IncomingForm();
+    const [fields, files] = await form.parse(req);
+
+    const photoFile = files.photo?.[0];
+    if (!photoFile) {
       return res.status(400).json({ error: "No file uploaded. Use the field name 'photo'." });
     }
 
-    const k = Math.max(2, Math.min(10, Number(req.body.k || 5)));
+    const k = Math.max(2, Math.min(10, Number(fields.k?.[0] || 5)));
 
-    const image = sharp(req.file.buffer, { failOn: "none" }).rotate();
+    const fileBuffer = await new Promise((resolve, reject) => {
+      const chunks = [];
+      const stream = createReadStream(photoFile.filepath);
+      stream.on("data", (chunk) => chunks.push(chunk));
+      stream.on("end", () => resolve(Buffer.concat(chunks)));
+      stream.on("error", reject);
+    });
+
+    const image = sharp(fileBuffer, { failOn: "none" }).rotate();
     const metadata = await image.metadata();
 
     const { data, info } = await image
@@ -191,7 +202,4 @@ app.post("/api/analyze", upload.single("photo"), async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "Could not analyze this image." });
   }
-});
-
-module.exports = app;
-
+}

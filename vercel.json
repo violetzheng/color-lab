@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "buildCommand": "npm run install:all && npm --prefix client run build",
+  "outputDirectory": "client/dist",
+  "env": {
+    "VITE_API_URL": "@vite_api_url"
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "server/:path*"
+    }
+  ]
+}
