@@ -1,6 +1,7 @@
 # Color Visualisation App
 
 A fun simple app that lets you upload a photo/graphic/design, extracts the main colours using k-means, then allows users to play around with the color selection, recolours the image interactively.
+<img width="780" height="722" alt="preview_website" src="https://github.com/user-attachments/assets/d7ddd078-2390-44a3-9592-0bbca1395635" />
 
 ## Features
 
